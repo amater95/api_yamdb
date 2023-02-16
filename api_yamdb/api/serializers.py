@@ -1,13 +1,9 @@
 from django.contrib.auth.validators import UnicodeUsernameValidator
 from django.db.models import Avg
 from rest_framework import serializers
-from rest_framework.exceptions import ValidationError
 from rest_framework.generics import get_object_or_404
 from rest_framework.validators import UniqueTogetherValidator, UniqueValidator
 from reviews.models import Category, Comment, Genre, Review, Title, User
-
-from .utility import (generate_confirmation_code,
-                      send_email_with_verification_code)
 
 
 class GenreSerializer(serializers.ModelSerializer):
@@ -81,11 +77,12 @@ class ReviewSerializer(serializers.ModelSerializer):
         author = request.user
         title_id = self.context['view'].kwargs.get('title_id')
         title = get_object_or_404(Title, pk=title_id)
-        if request.method == 'POST':
-            if title.reviews.select_related('title').filter(author=author):
-                raise ValidationError(
-                    'Отзыв можно оставить только один раз!'
-                )
+        if request.method == 'POST' and Review.objects.filter(
+            title=title, author=author
+        ).exists():
+            raise serializers.ValidationError(
+                'Отзыв можно оставить только один раз!'
+            )
         return data
 
 
@@ -203,12 +200,6 @@ class ConfirmationCodeSerializer(serializers.ModelSerializer):
                 fields=['username', 'email']
             ),
         )
-
-    def create(self, validated_data):
-        validated_data['confirmation_code'] = generate_confirmation_code()
-        user = User.objects.create_user(**validated_data)
-        send_email_with_verification_code(validated_data)
-        return user
 
     def validate_username(self, value):
         if value == 'me':

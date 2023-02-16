@@ -145,8 +145,6 @@ SIMPLE_JWT = {
     'AUTH_HEADER_TYPES': ('Bearer',),
 }
 
-EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
-
 CHAR_COUNT = 15
 
 SIMPLE_JWT = {
@@ -181,3 +179,5 @@ SIMPLE_JWT = {
 }
 
 EMPTY_VALUE_DISPLAY = '-empty-'
+
+MAILER_BACKEND = 'from@example.com'

@@ -8,6 +8,8 @@ from rest_framework_simplejwt.tokens import AccessToken
 from reviews.models import Category, Genre, Review, Title, User
 
 from .filters import TitleFilter
+from .utility import (generate_confirmation_code,
+                      send_email_with_verification_code)
 from .permissions import (AuthorOrAdminOrModeratorReviewComment,
                           IsAdminOrIsSuperuser,
                           IsAdminOrIsSuperuserTitleCategoryGenre)
@@ -154,12 +156,16 @@ class SignUpViewSet(mixins.CreateModelMixin,
             )
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
-        self.perform_create(serializer)
-        headers = self.get_success_headers(serializer.data)
+        user, _ = User.objects.get_or_create(**serializer.validated_data)
+        confirmation_code = generate_confirmation_code()
+        send_email_with_verification_code(
+            username=user.username,
+            email=user.email,
+            confirmation_code=confirmation_code
+        )
         return Response(
             serializer.data,
-            status=status.HTTP_200_OK,
-            headers=headers
+            status=status.HTTP_200_OK
         )
 
 
