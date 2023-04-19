@@ -108,12 +108,9 @@ class UserViewSet(viewsets.ModelViewSet):
     search_fields = ('username',)
 
     def get_serializer_class(self):
-        if (
-            self.request.user.role != 'admin'
-            or self.request.user.is_superuser
-        ):
-            return UserSerializer
-        return AdminUserSerializer
+        if self.request.user.is_admin:
+            return AdminUserSerializer
+        return UserSerializer
 
     @action(
         detail=False,
@@ -150,6 +147,12 @@ class SignUpViewSet(mixins.CreateModelMixin,
             username=request.data.get('username'),
             email=request.data.get('email')
         ).exists():
+            confirmation_code = generate_confirmation_code()
+            send_email_with_verification_code(
+                username=request.data.get('username'),
+                email=request.data.get('email'),
+                confirmation_code=confirmation_code
+            )
             return Response(
                 request.data,
                 status=status.HTTP_200_OK
